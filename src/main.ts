@@ -1,13 +1,14 @@
-
+// Tipo base: rappresenta una persona
 export type Person = {
-    readonly id: number,
-    readonly name: string,
-    birth_year: number,
-    death_year?: number,
-    biography: string,
-    image: string
+    readonly id: number,         // Identificativo univoco (immutabile)
+    readonly name: string,       // Nome completo (immutabile)
+    birth_year: number,          // Anno di nascita
+    death_year?: number,         // Anno di morte (facoltativo)
+    biography: string,           // Biografia della persona
+    image: string                // URL dell'immagine
 }
 
+// Tipo ristretto per le nazionalità possibili delle attrici
 export type ActressNationality =
     | "American"
     | "British"
@@ -22,27 +23,21 @@ export type ActressNationality =
     | "South Korean"
     | "Chinese"
 
+// Tipo Actress che estende Person con proprietà specifiche
 export type Actress = Person & {
-    most_famous_movies: [string, string, string],
-    awards: string,
-    nationality: ActressNationality,
-
+    most_famous_movies: [string, string, string], // Esattamente tre film famosi
+    awards: string,                               // Premi ricevuti
+    nationality: ActressNationality,              // Nazionalità (ristretta ai valori sopra)
 }
 
-// Crea una funzione getActress che, dato un id, effettua una chiamata a:
-
-// GET /actresses/:id
-// La funzione deve restituire l’oggetto Actress, se esiste, oppure null se non trovato.
-
-// Utilizza un type guard chiamato isActress per assicurarti che la struttura del dato ricevuto sia corretta.
-
-export function isActress(dati: unknown): dati is Actress{
+// Type guard: verifica che un oggetto sia del tipo Actress
+export function isActress(dati: unknown): dati is Actress {
     return (
         typeof dati === 'object' && dati !== null &&
-        "id" in dati && typeof  dati.id === 'number' &&
+        "id" in dati && typeof dati.id === 'number' &&
         "name" in dati && typeof dati.name === 'string' &&
         "birth_year" in dati && typeof dati.birth_year === 'number' &&
-        "death_year" in dati && typeof dati.death_year === 'number' &&
+        "death_year" in dati && typeof dati.death_year === 'number'  && // Permette anche undefined
         "biography" in dati && typeof dati.biography === 'string' &&
         "image" in dati && typeof dati.image === 'string' &&
         "most_famous_movies" in dati &&
@@ -54,22 +49,54 @@ export function isActress(dati: unknown): dati is Actress{
     )
 }
 
-export async function getActress(id:number): Promise<Actress | null>{
-    try{
+// Funzione asincrona per ottenere una singola attrice tramite ID
+export async function getActress(id: number): Promise<Actress | null> {
+    try {
         const response = await fetch(`http://localhost:3333/actresses/${id}`)
-        const dati: unknown= await response.json();
-        if(!isActress(dati)){
+        const dati: unknown = await response.json();
+
+        // Controlla che i dati ricevuti abbiano la struttura corretta
+        if (!isActress(dati)) {
             throw new Error('Formato dei dati non valido');
         }
-        return dati;
 
-    }catch(error){
-        if(error instanceof Error){
-            console.error('Errore durante il recupero dell\'attrice:', error)
-        }else{
-            console.error('errore sconosciuto:', error);
+        return dati; // Dati validi, restituisce l'oggetto Actress
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error('Errore durante il recupero dell\'attrice:', error);
+        } else {
+            console.error('Errore sconosciuto:', error);
         }
-        return null
+        return null; // In caso di errore, restituisce null
     }
-    
+}
+
+// Funzione per recuperare tutte le attrici
+export async function getAllActress(): Promise<Actress[]> {
+    try {
+        const response = await fetch(`http://localhost:3333/actresses`)
+        
+        // Controlla che la risposta HTTP sia valida
+        if (!response.ok) {
+            throw new Error(`Errore HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const dati: unknown = await response.json();
+
+        // Verifica che i dati siano un array
+        if (!(dati instanceof Array)) {
+            throw new Error('Formato dei dati non valido: non è un array');
+        }
+
+        // Filtra solo gli oggetti che rispettano la struttura Actress
+        const attriciValide = dati.filter(isActress);
+        return attriciValide;
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error('Errore durante il recupero delle attrici:', error);
+        } else {
+            console.error('Errore sconosciuto:', error);
+        }
+        return []; // In caso di errore, restituisce un array vuoto
+    }
 }
