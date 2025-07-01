@@ -37,7 +37,7 @@ export function isActress(dati: unknown): dati is Actress {
         "id" in dati && typeof dati.id === 'number' &&
         "name" in dati && typeof dati.name === 'string' &&
         "birth_year" in dati && typeof dati.birth_year === 'number' &&
-        "death_year" in dati && typeof dati.death_year === 'number'  && // Permette anche undefined
+        "death_year" in dati && typeof dati.death_year === 'number' && // Permette anche undefined
         "biography" in dati && typeof dati.biography === 'string' &&
         "image" in dati && typeof dati.image === 'string' &&
         "most_famous_movies" in dati &&
@@ -75,7 +75,7 @@ export async function getActress(id: number): Promise<Actress | null> {
 export async function getAllActress(): Promise<Actress[]> {
     try {
         const response = await fetch(`http://localhost:3333/actresses`)
-        
+
         // Controlla che la risposta HTTP sia valida
         if (!response.ok) {
             throw new Error(`Errore HTTP ${response.status}: ${response.statusText}`);
@@ -98,5 +98,29 @@ export async function getAllActress(): Promise<Actress[]> {
             console.error('Errore sconosciuto:', error);
         }
         return []; // In caso di errore, restituisce un array vuoto
+    }
+}
+
+// Funzione per recuperare un array di attrici dato un array di ID
+export async function getActresses(ids: number[]): Promise<(Actress | null)[]> {
+    try {
+        // Mappa ogni ID alla chiamata API corrispondente usando getActress
+        const promises = ids.map(id => getActress(id));
+
+        // Esegue tutte le chiamate in parallelo con Promise.all
+        const actresses = await Promise.all(promises);
+
+        // Restituisce l'array di risultati (alcuni possono essere null)
+        return actresses;
+    } catch (error) {
+        // Gestione dell'errore generico
+        if (error instanceof Error) {
+            console.error('Errore durante il recupero delle attrici:', error);
+        } else {
+            console.error('Errore sconosciuto:', error);
+        }
+
+        // In caso di errore globale, restituisce un array vuoto
+        return [];
     }
 }
